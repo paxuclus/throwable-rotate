@@ -1,0 +1,19 @@
+{
+    "name": "lala/throwablerotate",
+    "type": "neos-package",
+    "description": "Bundle old logged exceptions to zips",
+    "require": {
+        "neos/flow": "^5.3",
+        "neos/utility-files": "^5.3"
+    },
+    "autoload": {
+        "psr-4": {
+            "Lala\\ThrowableRotate\\": "Classes/"
+        }
+    },
+    "extra": {
+        "neos": {
+            "package-key": "Lala.ThrowableRotate"
+        }
+    }
+}

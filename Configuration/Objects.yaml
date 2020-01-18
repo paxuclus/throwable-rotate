@@ -1,0 +1,4 @@
+Neos\Flow\Log\ThrowableStorageInterface:
+  scope: singleton
+  # Note that this is a "fake" entry and doesn't get used. Please change the setting Neos.Flow.log.throwables.storageClass
+  className: Lala\ThrowableRotate\Log\RotatingFileStorage
