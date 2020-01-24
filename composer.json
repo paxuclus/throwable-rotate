@@ -1,7 +1,7 @@
 {
     "name": "lala/throwablerotate",
     "type": "neos-package",
-    "description": "Bundle old logged exceptions to zips",
+    "description": "Bundle old Flow exceptions to zips",
     "require": {
         "neos/flow": "^5.3",
         "neos/utility-files": "^5.3"
