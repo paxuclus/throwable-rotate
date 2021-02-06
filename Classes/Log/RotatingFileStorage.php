@@ -5,7 +5,7 @@ namespace Lala\ThrowableRotate\Log;
 
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Core\Bootstrap;
-use Neos\Flow\Log\PsrSystemLoggerInterface;
+use Neos\Flow\Log\PsrLoggerFactoryInterface;
 use Neos\Flow\Log\ThrowableStorage\FileStorage;
 use Neos\Flow\Log\ThrowableStorageInterface;
 use Neos\Flow\Log\Utility\LogEnvironment;
@@ -68,7 +68,8 @@ class RotatingFileStorage extends FileStorage
         try {
             $this->archiveExceptionFiles();
         } catch (Throwable $t) {
-            $systemLogger = Bootstrap::$staticObjectManager->get(PsrSystemLoggerInterface::class);
+            $loggerFactory = Bootstrap::$staticObjectManager->get(PsrLoggerFactoryInterface::class);
+            $systemLogger = $loggerFactory->get('systemLogger');
             assert($systemLogger instanceof LoggerInterface);
 
             $systemLogger->error('Could not bundle exceptions', array_merge(
