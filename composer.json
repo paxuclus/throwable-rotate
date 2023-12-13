@@ -4,8 +4,8 @@
     "description": "Bundle old Flow exceptions to zips",
     "license": ["MIT"],
     "require": {
-        "neos/flow": "^5.3 || ^6.3 || ^7.0 || ^8.0",
-        "neos/utility-files": "^5.3 || ^6.3 || ^7.0 || ^8.0"
+        "neos/flow": "^8.3",
+        "neos/utility-files": "^8.3"
     },
     "autoload": {
         "psr-4": {
