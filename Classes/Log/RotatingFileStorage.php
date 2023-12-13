@@ -54,7 +54,7 @@ class RotatingFileStorage extends FileStorage
         int $exceptionsToKeep,
         int $archiveThreshold
     ) {
-        parent::__construct($storagePath);
+        parent::__construct($storagePath, 0, 0);
 
         $this->archiveStoragePath = $archiveStoragePath;
         $this->unbundledExceptions = $exceptionsToKeep;
