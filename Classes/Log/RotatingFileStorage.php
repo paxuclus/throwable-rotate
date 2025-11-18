@@ -68,6 +68,10 @@ class RotatingFileStorage extends FileStorage
         try {
             $this->archiveExceptionFiles();
         } catch (Throwable $t) {
+            if (Bootstrap::$staticObjectManager === null) {
+                return $message;
+            }
+
             $loggerFactory = Bootstrap::$staticObjectManager->get(PsrLoggerFactoryInterface::class);
             $systemLogger = $loggerFactory->get('systemLogger');
             assert($systemLogger instanceof LoggerInterface);
