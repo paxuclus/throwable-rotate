@@ -9,6 +9,7 @@ use Neos\Flow\Log\PsrLoggerFactoryInterface;
 use Neos\Flow\Log\ThrowableStorage\FileStorage;
 use Neos\Flow\Log\ThrowableStorageInterface;
 use Neos\Flow\Log\Utility\LogEnvironment;
+use ArrayIterator;
 use Neos\Utility\Files;
 use PharData;
 use Psr\Log\LoggerInterface;
@@ -36,13 +37,19 @@ class RotatingFileStorage extends FileStorage
      */
     protected $archiveStoragePath;
 
+    /**
+     * @var int
+     */
+    protected $maxFilesPerRun = 500;
+
     public static function createWithOptions(array $options): ThrowableStorageInterface
     {
         $storage = new static(
             $options['storagePath'] ?? (FLOW_PATH_DATA . 'Logs/Exceptions'),
             $options['archiveStoragePath'] ?? (FLOW_PATH_DATA . 'Logs/Exceptions'),
             $options['exceptionsToKeep'] ?? 50,
-            $options['archiveThreshold'] ?? 10
+            $options['archiveThreshold'] ?? 10,
+            $options['maxFilesPerRun'] ?? 500
         );
 
         return $storage;
@@ -52,13 +59,15 @@ class RotatingFileStorage extends FileStorage
         string $storagePath,
         string $archiveStoragePath,
         int $exceptionsToKeep,
-        int $archiveThreshold
+        int $archiveThreshold,
+        int $maxFilesPerRun = 500
     ) {
         parent::__construct($storagePath, 0, 0);
 
         $this->archiveStoragePath = $archiveStoragePath;
         $this->unbundledExceptions = $exceptionsToKeep;
         $this->archiveThreshold = $archiveThreshold;
+        $this->maxFilesPerRun = $maxFilesPerRun;
     }
 
     public function logThrowable(Throwable $throwable, array $additionalData = [])
@@ -87,29 +96,49 @@ class RotatingFileStorage extends FileStorage
 
     public function archiveExceptionFiles(): void
     {
-        $exceptions = $this->loadExceptionFiles();
-        if (count($exceptions) <= $this->unbundledExceptions + $this->archiveThreshold) {
+        $lock = fopen(Files::concatenatePaths([$this->storagePath, '.archive.lock']), 'c');
+        if ($lock === false) {
+            return;
+        }
+        // Another worker is archiving, the next exception will pick up what is left
+        if (!flock($lock, LOCK_EX | LOCK_NB)) {
+            fclose($lock);
             return;
         }
 
-        $exceptionsToBundle = array_slice($exceptions, $this->unbundledExceptions);
-        if (!is_dir($this->archiveStoragePath)) {
-            Files::createDirectoryRecursively($this->archiveStoragePath);
+        try {
+            $exceptions = $this->loadExceptionFiles();
+            if (count($exceptions) <= $this->unbundledExceptions + $this->archiveThreshold) {
+                return;
+            }
+
+            $exceptionsToBundle = array_slice(
+                array_reverse(array_slice($exceptions, $this->unbundledExceptions)),
+                0,
+                $this->maxFilesPerRun
+            );
+            if (!is_dir($this->archiveStoragePath)) {
+                Files::createDirectoryRecursively($this->archiveStoragePath);
+            }
+            $targetZipFile = Files::concatenatePaths([
+                $this->archiveStoragePath,
+                sprintf('exceptions-%s-%s.zip', date('Ymd-His'), bin2hex(random_bytes(3)))
+            ]);
+            $this->writeArchive($targetZipFile, $exceptionsToBundle);
+            array_map('unlink', $exceptionsToBundle);
+        } finally {
+            flock($lock, LOCK_UN);
+            fclose($lock);
         }
-        $targetZipFile = Files::concatenatePaths([
-            $this->archiveStoragePath,
-            'exceptions-' . date('Ymd') . '.zip'
-        ]);
-        $this->appendFilesToArchive($targetZipFile, $exceptionsToBundle);
     }
 
-    protected function appendFilesToArchive(string $target, array $files): void
+    /**
+     * Writes a new archive in one go. Appending to an existing one makes Phar rewrite the whole archive per file.
+     */
+    protected function writeArchive(string $target, array $files): void
     {
         $archive = new PharData($target);
-        foreach ($files as $file) {
-            $archive->addFile($file, basename($file));
-            unlink($file);
-        }
+        $archive->buildFromIterator(new ArrayIterator(array_combine(array_map('basename', $files), $files)));
     }
 
     protected function loadExceptionFiles(): array
@@ -126,15 +155,13 @@ class RotatingFileStorage extends FileStorage
                 continue;
             }
 
-            $exceptionFiles[] = $filePath;
+            $exceptionFiles[$filePath] = filemtime($filePath);
         }
         closedir($dir);
 
-        usort($exceptionFiles, function (string $a, string $b) {
-            return filemtime($b) <=> filemtime($a);
-        });
+        arsort($exceptionFiles);
 
-        return $exceptionFiles;
+        return array_keys($exceptionFiles);
     }
 
 }
