@@ -1,0 +1,39 @@
+name: Tests
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  phpunit:
+    name: 'PHP ${{ matrix.php }}, Flow ${{ matrix.flow }}'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - php: '8.1'
+            flow: '^8.3'
+          - php: '8.3'
+            flow: '^8.3'
+          - php: '8.3'
+            flow: '^9.0'
+          - php: '8.4'
+            flow: '^9.0'
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+
+      - name: Install dependencies
+        run: |
+          composer require --no-update "neos/flow:${{ matrix.flow }}" "neos/utility-files:${{ matrix.flow }}"
+          composer update --no-interaction --no-progress
+
+      - name: Run tests
+        run: composer test

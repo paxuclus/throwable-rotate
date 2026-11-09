@@ -2,15 +2,33 @@
     "name": "lala/throwablerotate",
     "type": "neos-package",
     "description": "Bundle old Flow exceptions to zips",
-    "license": ["MIT"],
+    "license": [
+        "MIT"
+    ],
     "require": {
         "neos/flow": "^8.3 || ^9.0",
         "neos/utility-files": "^8.3 || ^9.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9.6 || ^10.5"
     },
     "autoload": {
         "psr-4": {
             "Lala\\ThrowableRotate\\": "Classes/"
         }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Lala\\ThrowableRotate\\Tests\\": "Tests/"
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "neos/composer-plugin": true
+        }
+    },
+    "scripts": {
+        "test": "phpunit"
     },
     "extra": {
         "neos": {
