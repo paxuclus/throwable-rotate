@@ -22,4 +22,7 @@ Neos:
 
             # Sets the threshold for when to archive all exceptions that exceed 'exceptionsToKeep'
             archiveThreshold: 10
+
+            # Maximum amount of exceptions bundled into one archive per run
+            maxFilesPerRun: 500
 ```
